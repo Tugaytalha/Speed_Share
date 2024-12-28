@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Shared Speed Entries</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 2rem;
+      background: #f9f9f9;
+    }
+    h1 {
+      text-align: center;
+    }
+    .container {
+      max-width: 400px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .form-group {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .form-group label {
+      flex: 0 0 60px;
+      line-height: 32px;
+    }
+    .form-group input,
+    .form-group select {
+      flex: 1;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    #addButton {
+      width: 100%;
+      padding: 0.75rem;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    #addButton:hover {
+      background: #0056b3;
+    }
+    ul {
+      margin-top: 1rem;
+      padding-left: 1.25rem;
+      list-style-type: disc;
+    }
+    .list-item {
+      margin: 0.25rem 0;
+      padding: 0.5rem;
+      background: #eef;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Shared Speed Entries</h1>
+
+  <div class="container">
+    <div class="form-group">
+      <label for="speedValue">Speed:</label>
+      <input type="number" id="speedValue" placeholder="Enter a number">
+    </div>
+
+    <div class="form-group">
+      <label for="speedUnit">Unit:</label>
+      <select id="speedUnit">
+        <option value="MBPS">MBPS</option>
+        <option value="KBPS">KBPS</option>
+      </select>
+    </div>
+
+    <button id="addButton">Add</button>
+
+    <ul id="speedList"></ul>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:3000'; // Change if deployed elsewhere
+
+    const speedValueInput = document.getElementById('speedValue');
+    const speedUnitSelect = document.getElementById('speedUnit');
+    const addButton = document.getElementById('addButton');
+    const speedList = document.getElementById('speedList');
+
+    // 1. On page load, fetch existing speeds
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const response = await fetch(`${API_BASE}/speeds`);
+        if (response.ok) {
+          const speeds = await response.json();
+          renderSpeedList(speeds);
+        } else {
+          console.error('Failed to fetch speeds:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching speeds:', error);
+      }
+    });
+
+    // 2. Add new speed on button click
+    addButton.addEventListener('click', async () => {
+      const value = speedValueInput.value.trim();
+      const unit = speedUnitSelect.value;
+
+      if (!value) {
+        alert('Please enter a number for speed.');
+        return;
+      }
+
+      // POST to the server
+      const newEntry = { value, unit };
+      try {
+        const response = await fetch(`${API_BASE}/speeds`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newEntry),
+        });
+
+        if (response.ok) {
+          // Successfully added; fetch updated list
+          speedValueInput.value = '';
+          refreshList();
+        } else {
+          console.error('Failed to add speed:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error adding speed:', error);
+      }
+    });
+
+    // Function to refetch speeds and re-render list
+    async function refreshList() {
+      try {
+        const response = await fetch(`${API_BASE}/speeds`);
+        if (response.ok) {
+          const speeds = await response.json();
+          renderSpeedList(speeds);
+        }
+      } catch (error) {
+        console.error('Error refreshing list:', error);
+      }
+    }
+
+    // Render speeds in the <ul> list
+    function renderSpeedList(speeds) {
+      speedList.innerHTML = ''; // Clear current list
+      speeds.forEach(entry => {
+        const li = document.createElement('li');
+        li.className = 'list-item';
+        li.textContent = `${entry.value} ${entry.unit}`;
+        speedList.appendChild(li);
+      });
+    }
+  </script>
+</body>
+</html>
