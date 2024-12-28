@@ -36,19 +36,19 @@ app.get('/speeds', (req, res) => {
   res.json(speeds);
 });
 
-// POST /speeds -> add a new entry
 app.post('/speeds', (req, res) => {
   const { value, unit } = req.body;
-
   if (!value || !unit) {
     return res.status(400).json({ error: 'Missing value or unit' });
   }
 
-  speeds.push({ value, unit });
+  // Use unshift instead of push:
+  speeds.unshift({ value, unit });
   console.log(`New speed added: ${value} ${unit}`);
 
   res.json({ message: 'Speed added successfully' });
 });
+
 
 // For any other routes not handled by the above, serve `index.html`
 // This is helpful for single-page apps where the frontend handles the routing
