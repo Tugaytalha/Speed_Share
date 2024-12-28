@@ -85,29 +85,21 @@
   </div>
 
   <script>
-    const API_BASE = 'https://speedshare-production.up.railway.app'; // Change if deployed elsewhere
+    // Because index.html is served from the same domain as the API,
+    // we can just do a relative path without specifying the domain.
+    // i.e. fetch("/speeds") or fetch("/speeds", { method: "POST" })
+    const API_BASE = 'https://speedshare-production.up.railway.app';
 
     const speedValueInput = document.getElementById('speedValue');
     const speedUnitSelect = document.getElementById('speedUnit');
     const addButton = document.getElementById('addButton');
     const speedList = document.getElementById('speedList');
 
-    // 1. On page load, fetch existing speeds
-    window.addEventListener('DOMContentLoaded', async () => {
-      try {
-        const response = await fetch(`${API_BASE}/speeds`);
-        if (response.ok) {
-          const speeds = await response.json();
-          renderSpeedList(speeds);
-        } else {
-          console.error('Failed to fetch speeds:', response.statusText);
-        }
-      } catch (error) {
-        console.error('Error fetching speeds:', error);
-      }
+    // On page load, fetch existing speeds
+    window.addEventListener('DOMContentLoaded', () => {
+      refreshList();
     });
 
-    // 2. Add new speed on button click
     addButton.addEventListener('click', async () => {
       const value = speedValueInput.value.trim();
       const unit = speedUnitSelect.value;
@@ -117,8 +109,8 @@
         return;
       }
 
-      // POST to the server
       const newEntry = { value, unit };
+
       try {
         const response = await fetch(`${API_BASE}/speeds`, {
           method: 'POST',
@@ -126,34 +118,37 @@
           body: JSON.stringify(newEntry),
         });
 
-        if (response.ok) {
-          // Successfully added; fetch updated list
-          speedValueInput.value = '';
-          refreshList();
-        } else {
+        if (!response.ok) {
           console.error('Failed to add speed:', response.statusText);
+          return;
         }
+
+        // Clear the input
+        speedValueInput.value = '';
+
+        // Refresh the list
+        refreshList();
       } catch (error) {
         console.error('Error adding speed:', error);
       }
     });
 
-    // Function to refetch speeds and re-render list
     async function refreshList() {
       try {
         const response = await fetch(`${API_BASE}/speeds`);
-        if (response.ok) {
-          const speeds = await response.json();
-          renderSpeedList(speeds);
+        if (!response.ok) {
+          console.error('Failed to fetch speeds:', response.statusText);
+          return;
         }
+        const speeds = await response.json();
+        renderSpeedList(speeds);
       } catch (error) {
-        console.error('Error refreshing list:', error);
+        console.error('Error refreshing speeds:', error);
       }
     }
 
-    // Render speeds in the <ul> list
     function renderSpeedList(speeds) {
-      speedList.innerHTML = ''; // Clear current list
+      speedList.innerHTML = '';
       speeds.forEach(entry => {
         const li = document.createElement('li');
         li.className = 'list-item';

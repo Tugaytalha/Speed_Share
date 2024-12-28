@@ -1,57 +1,62 @@
 /**
  * server.js
- * 
- * Run:
+ *
+ * Commands to run (if local testing):
  *    npm install express cors
  *    node server.js
  *
- * This starts a server on port 3000.
+ * On Railway, you just push this repo and configure your service to run `node server.js`.
  */
 
 const express = require('express');
 const cors = require('cors');
-const app = express();
-const port = 3000;
+const path = require('path');
 
-// Enable CORS (so the frontend can request from a different origin)
+const app = express();
+
+// On Railway, the port is provided in process.env.PORT
+// Fallback to 3000 if not set
+const PORT = process.env.PORT || 3000;
+
+// Enable CORS (so that requests from other origins are allowed, if needed)
 app.use(cors());
-// Enable JSON-parsing middleware
+
+// Enable JSON body parsing for POST requests
 app.use(express.json());
 
-// In-memory array to store speed entries
-// Format: [{ value: string, unit: string }]
+// Serve all static files in the `public` folder
+// e.g., `index.html` will be served at the root `/`
+app.use(express.static(path.join(__dirname, 'public')));
+
+// In-memory array to store speeds
 let speeds = [];
 
-/**
- * GET /speeds
- * Returns the entire list of speeds
- */
+// GET /speeds -> returns all speed entries
 app.get('/speeds', (req, res) => {
   res.json(speeds);
 });
 
-/**
- * POST /speeds
- * Body: { value: string, unit: string }
- * Adds a new speed entry to the in-memory array
- */
+// POST /speeds -> add a new entry
 app.post('/speeds', (req, res) => {
   const { value, unit } = req.body;
 
-  // Simple validation
   if (!value || !unit) {
     return res.status(400).json({ error: 'Missing value or unit' });
   }
 
-  // Store in array
   speeds.push({ value, unit });
   console.log(`New speed added: ${value} ${unit}`);
 
-  // Return success message
   res.json({ message: 'Speed added successfully' });
 });
 
+// For any other routes not handled by the above, serve `index.html`
+// This is helpful for single-page apps where the frontend handles the routing
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Start the server
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
 });
